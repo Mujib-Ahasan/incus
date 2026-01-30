@@ -206,6 +206,8 @@ func storagePoolVolumeSnapshotsTypePost(d *Daemon, r *http.Request) response.Res
 		pattern = "snap%d"
 	}
 
+	isPongo := strings.Contains(pattern, "{{") || strings.Contains(pattern, "{%")
+
 	pattern, err = internalUtil.RenderTemplate(pattern, pongo2.Context{
 		"creation_date": time.Now(),
 	})
@@ -224,6 +226,8 @@ func storagePoolVolumeSnapshotsTypePost(d *Daemon, r *http.Request) response.Res
 		})
 
 		req.Name = fmt.Sprintf(pattern, i)
+	} else if req.Name == "" && isPongo {
+		req.Name = pattern
 	} else if req.Name != "" {
 		// Make sure the snapshot doesn't already exist.
 		err = s.DB.Cluster.Transaction(r.Context(), func(ctx context.Context, tx *db.ClusterTx) error {
